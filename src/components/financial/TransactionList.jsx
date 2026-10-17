@@ -21,12 +21,10 @@ function TransactionItem({
   };
 
   const formatDate = (dateStr) => {
-    const parsed = new Date(dateStr);
+    const parsed = new Date(`${dateStr}T12:00:00`);
     return parsed.toLocaleString('pt-BR', {
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -39,11 +37,11 @@ function TransactionItem({
       data-testid={`transaction-${id}`}
     >
       {selectable && (
-        <div className="checkbox-wrapper" onClick={() => onSelect && onSelect(id)}>
+        <div className="checkbox-wrapper">
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={() => {}}
+            onChange={() => onSelect?.(id)}
             aria-label={`Selecionar ${description}`}
           />
         </div>
@@ -137,7 +135,7 @@ export function TransactionList({
       let key;
 
       if (groupBy === 'date') {
-        key = new Date(transaction.date).toLocaleDateString('pt-BR');
+        key = new Date(`${transaction.date}T12:00:00`).toLocaleDateString('pt-BR');
       } else if (groupBy === 'category') {
         key = transaction.category;
       } else if (groupBy === 'type') {

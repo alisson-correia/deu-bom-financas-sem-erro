@@ -6,6 +6,7 @@ import { InsightCard } from '@/components/analytics/InsightCard';
 import { BottomNav } from '@/components/common/BottomNav';
 import EmptyStates from '@/EmptyStates';
 import './AnalyticsPage.css';
+import { filterTransactions, downloadCsv } from './lib/finance';
 
 export function AnalyticsPage({
   transactions = [],
@@ -47,20 +48,17 @@ export function AnalyticsPage({
   );
 
   const handleExport = () => {
-    console.log('Exportar analise...', filter);
+    downloadCsv(filteredTransactions, 'deu-bom-analise.csv');
   };
 
   return (
     <div className="analytics-page">
       <header className="analytics-page__header">
         <h1>Analise</h1>
-        <button className="analytics-page__header-btn" aria-label="Mais opcoes">
-          ...
-        </button>
       </header>
 
       <FilterBar
-        periods={['Esta semana', 'Este mes', 'Este ano', 'Custom']}
+        periods={['Esta semana', 'Este mes', 'Este ano', 'Todo periodo']}
         categories={categories}
         onFilter={setFilter}
         initialPeriod="Este mes"
@@ -131,64 +129,9 @@ export function AnalyticsPage({
   );
 }
 
-function filterTransactions(transactions, filter) {
-  const referenceDate = getReferenceDate(transactions);
-
-  return transactions.filter((transaction) => {
-    if (
-      filter.categories.length > 0 &&
-      !filter.categories.includes(transaction.category)
-    ) {
-      return false;
-    }
-
-    if (!isTransactionInsidePeriod(transaction.date, filter.period, referenceDate)) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function getReferenceDate(transactions) {
-  const timestamps = transactions
-    .map((transaction) => new Date(transaction.date).getTime())
-    .filter((timestamp) => Number.isFinite(timestamp));
-
-  return timestamps.length > 0 ? new Date(Math.max(...timestamps)) : new Date();
-}
-
-function isTransactionInsidePeriod(date, period, referenceDate) {
-  const current = new Date(date);
-
-  if (!Number.isFinite(current.getTime())) {
-    return false;
-  }
-
-  if (period === 'Este ano') {
-    return current.getFullYear() === referenceDate.getFullYear();
-  }
-
-  if (period === 'Esta semana') {
-    const diffInDays = Math.floor(
-      (referenceDate.getTime() - current.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return diffInDays >= 0 && diffInDays < 7;
-  }
-
-  if (period === 'Este mes') {
-    return (
-      current.getMonth() === referenceDate.getMonth() &&
-      current.getFullYear() === referenceDate.getFullYear()
-    );
-  }
-
-  return true;
-}
-
 function buildTrendData(transactions) {
   const monthlyTotals = transactions.reduce((acc, transaction) => {
-    const current = new Date(transaction.date);
+    const current = new Date(`${transaction.date}T12:00:00`);
 
     if (!Number.isFinite(current.getTime())) {
       return acc;
@@ -271,7 +214,7 @@ function generateInsights(categoryData, trendData) {
         icon: 'Alta',
         text: `Seus gastos aumentaram ${change}% em relacao ao mes anterior`,
         type: 'warning',
-        action: 'Revisar gastos',
+        action: null,
       });
     } else if (change < -10) {
       insights.push({
@@ -283,12 +226,6 @@ function generateInsights(categoryData, trendData) {
     }
   }
 
-  insights.push({
-    icon: 'Dica',
-    text: 'Voce gasta mais nos fins de semana. Considere planejar essas despesas.',
-    type: 'tip',
-    action: null,
-  });
 
   return insights;
 }

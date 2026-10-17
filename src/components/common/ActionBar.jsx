@@ -26,6 +26,7 @@ export function ActionBar({ selectedCount = 0, actions = [] }) {
             key={idx}
             className={`action-bar__btn ${action.danger ? 'action-bar__btn--danger' : ''}`}
             onClick={action.handler}
+            disabled={action.disabled}
             title={action.label}
             aria-label={action.label}
           >

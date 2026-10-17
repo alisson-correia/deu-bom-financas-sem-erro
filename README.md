@@ -1,219 +1,53 @@
-# 🚀 DEU BOM!! - Finanças Sem Erro
+# DEU BOM!! — Finanças sem erro
 
-> **Uma PWA moderna para controle financeiro pessoal**
-> **React + Vite | Lighthouse 95+ | WCAG AA | Production-Ready**
+Aplicação React/Vite para receitas, despesas e análise financeira. Esta versão substitui os dados de demonstração por autenticação e persistência no Supabase existente.
 
-![DEU BOM!!](https://img.shields.io/badge/DEU%20BOM!!-Fintech%20PWA-blue?style=for-the-badge)
-![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=flat-square&logo=react)
-![Vite](https://img.shields.io/badge/Vite-8.0.8-646CFF?style=flat-square&logo=vite)
-![Lighthouse](https://img.shields.io/badge/Lighthouse-95+-00C853?style=flat-square)
+## Desenvolvimento
 
-## ✨ Características
+Requisitos: Node.js 24 (ver `.nvmrc`) e npm.
 
-- 🎨 **Design System Completo** - 68+ variáveis CSS, dark mode, responsive
-- 📱 **PWA Offline** - Service Worker, cache inteligente, install prompt
-- ♿ **Acessibilidade WCAG AA** - Screen readers, keyboard navigation, contrast
-- ⚡ **Performance Otimizada** - Bundle < 1.5MB, loading < 1.5s
-- 🧪 **Testing Completo** - Jest + RTL + axe-core (80%+ coverage)
-- 🚀 **Production-Ready** - Docker, CI/CD, monitoring
-
-## 📦 Estrutura do Projeto
-
-```
-src/
-├── components/
-│   ├── financial/     # BalanceCard, TransactionList
-│   ├── common/        # BottomNav, FilterBar, ActionBar
-│   └── analytics/     # CategoryChart, TrendChart, InsightCard
-├── pages/            # HomePage, TransactionsPage, AnalyticsPage
-├── utils/            # AccessibilityUtils, theme.js
-└── assets/           # Icons, images
+```sh
+npm ci
+cp .env.example .env.local
+# Preencha a URL e a chave pública do projeto em .env.local.
+npm run dev -- --host 0.0.0.0
 ```
 
-## 🚀 Deploy Automático
+Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. A segunda aceita uma chave publishable (`sb_publishable_...`) ou a antiga chave `anon`. Ela é pública e integra o bundle. **Nunca use `service_role`, senha de banco ou chave secreta no frontend.** Não versione valores locais. Em um deploy Vite, as variáveis precisam existir durante o build, seguido de novo deploy quando alteradas. Configure ambas nas variáveis do repositório GitHub para o CI e também nas configurações do projeto Vercel que executa o build remoto. O workflow exige essas variáveis antes de um deploy de produção.
 
-### GitHub + Vercel (Recomendado)
+## Fluxos implementados
 
-1. **Crie repositório no GitHub:**
-   ```bash
-   # No GitHub.com, crie um novo repositório
-   # Nome sugerido: deu-bom-fintech-pwa
-   ```
+- Login com e-mail/senha, cadastro com confirmação quando exigida pelo projeto, restauração da sessão e logout.
+- Seleção entre finanças pessoais e espaços existentes onde o usuário é proprietário ou membro aceito.
+- Leitura paginada de categorias e transações; criação, exclusão confirmada e categorização em lote (até 100 itens).
+- Formulários preservados quando a gravação falha; leituras com falha apresentam erro e nova tentativa, sem saldo zero fictício.
+- Visualizadores não recebem controles de gravação; as permissões definitivas devem ser impostas por RLS no banco.
+- Datas locais, filtros relativos ao calendário atual, totais calculados em centavos, exportação CSV com escape e proteção contra fórmulas em textos.
+- Gráficos e exportação da análise usam as transações carregadas, sem percentuais ou dicas financeiros fixos de demonstração.
 
-2. **Conecte ao repositório:**
-   ```bash
-   git remote add origin https://github.com/SEU_USERNAME/deu-bom-fintech-pwa.git
-   git branch -M main
-   git push -u origin main
-   ```
+Dados pessoais usam `user_id = usuário autenticado AND workspace_id IS NULL`. Dados compartilhados usam somente o espaço explicitamente selecionado. A interface não combina esses escopos com OR. Nenhuma migração ou alteração automática de políticas é executada.
 
-3. **Deploy no Vercel:**
-   - Acesse [vercel.com](https://vercel.com)
-   - Importe seu repositório GitHub
-   - Vercel detectará automaticamente as configurações
-   - Deploy automático em produção!
+## Verificações
 
-### Deploy Manual
-
-```bash
-# Instalar dependências
-npm install
-
-# Desenvolvimento local
-npm run dev
-
-# Build para produção
-npm run build
-
-# Preview do build
-npm run preview
-```
-
-## 🛠️ Tecnologias
-
-- **Frontend:** React 19 + Vite
-- **Styling:** CSS Modules + CSS Variables
-- **Testing:** Jest + React Testing Library + axe-core
-- **Deploy:** Vercel (recomendado) ou qualquer static host
-- **PWA:** Service Worker + Web App Manifest
-
-## 📊 Métricas de Qualidade
-
-| Métrica | Valor | Status |
-|---------|-------|--------|
-| Lighthouse Performance | 95+ | ✅ |
-| Lighthouse Accessibility | 100 | ✅ |
-| Bundle Size (gzip) | < 1.5MB | ✅ |
-| First Contentful Paint | < 1.5s | ✅ |
-| Time to Interactive | < 3s | ✅ |
-| WCAG Compliance | AA | ✅ |
-| Test Coverage | 80%+ | ✅ |
-
-## 🎯 Funcionalidades
-
-### 💰 Controle Financeiro
-- Saldo atual em destaque
-- Receitas vs Despesas
-- Histórico de transações
-- Categorias inteligentes
-
-### 📊 Analytics Avançado
-- Gráficos de tendência
-- Análise por categoria
-- Insights automáticos
-- Relatórios mensais
-
-### 🎨 UX Moderna
-- Design responsivo (320px → 1024px+)
-- Dark mode automático
-- Animações sutis
-- Estados de loading contextuais
-
-### ♿ Acessibilidade
-- Navegação por teclado completa
-- Suporte a leitores de tela
-- Contraste de cores otimizado
-- Focus management
-
-## 🔧 Desenvolvimento
-
-### Pré-requisitos
-- Node.js 18+
-- npm ou yarn
-
-### Setup
-```bash
-# Clonar repositório
-git clone https://github.com/SEU_USERNAME/deu-bom-fintech-pwa.git
-cd deu-bom-fintech-pwa
-
-# Instalar dependências
-npm install
-
-# Iniciar desenvolvimento
-npm run dev
-```
-
-### Scripts Disponíveis
-```bash
-npm run dev      # Desenvolvimento com HMR
-npm run build    # Build para produção
-npm run preview  # Preview do build
-npm run lint     # Verificar código
-```
-
-## 🧪 Testing
-
-```bash
-# Executar todos os testes
+```sh
+npm run lint
 npm test
-
-# Testes com coverage
-npm run test:coverage
-
-# Testes de acessibilidade
-npm run test:a11y
+npm run build
+npx playwright install chromium
+npm run test:e2e -- --workers=2
+npm run check:supabase
 ```
 
-## 🚀 Deploy
+Em ambientes com diretório pessoal sem escrita, use `PLAYWRIGHT_BROWSERS_PATH=/workspace/.cache/ms-playwright` na instalação do Chromium e na execução dos testes. O verificador de banco requer Node 24 para respeitar o proxy do ambiente e usa somente GET com `limit=0`, sem solicitar registros.
 
-### Vercel (Automático)
-1. Push para GitHub
-2. Conecte no Vercel
-3. Deploy automático!
+Os testes de navegador usam exclusivamente uma API simulada em `supabase.test`, em desktop e celular. Exercitam login, cadastro, persistência pela API simulada após recarga, categorização, exclusão, logout, exportação, filtros e estados de erro. Não criam contas nem lançamentos no banco real.
 
-### Outras Plataformas
-- **Netlify:** Conecte repositório GitHub
-- **GitHub Pages:** Use GitHub Actions
-- **Railway:** Deploy direto do GitHub
-- **Render:** Static site deployment
+## Estado do Supabase e limites desta entrega
 
-## 📈 Roadmap
+As 10 tabelas referenciadas pela exportação original responderam HTTP 200 às consultas das colunas descritas em `scripts/check-supabase.mjs`: `budgets`, `categories`, `event_items`, `event_participants`, `events`, `profiles`, `transactions`, `workspace_invitations`, `workspace_members`, `workspaces`.
 
-### ✅ Fase 1: Componentes Reutilizáveis
-- BalanceCard, TransactionList
-- Design system completo
+Isso confirma disponibilidade na API, não constitui auditoria de RLS, constraints, triggers, funções ou permissões entre usuários. O endpoint administrativo de metadados não aceita a chave pública. As consultas somente de leitura de [docs/supabase-check.sql](docs/supabase-check.sql) devem ser executadas por acesso autorizado ao catálogo. Depois, valide login/cadastro e gravações com contas de teste, incluindo um proprietário, um editor, um visualizador e alguém sem acesso ao espaço. Verifique isolamento de SELECT/INSERT/UPDATE/DELETE, inclusive quando um usuário manipula diretamente as requisições.
 
-### ✅ Fase 2: Páginas Redesenhadas
-- HomePage, TransactionsPage, AnalyticsPage
-- Navegação completa
+Esta base ainda não implementa administração de espaços/convites, criação de categorias, orçamentos, eventos ou recorrência. Transações novas são simples e pendentes. O saldo representa a soma dos lançamentos carregados, incluindo pendentes; não é saldo bancário conciliado. O relatório desta entrega não afirma cobertura, Lighthouse ou prontidão de produção sem medição.
 
-### ✅ Fase 3: Polish & Acessibilidade
-- Loading states, empty states
-- WCAG AA compliance
-- Performance optimization
-- Testing framework
-
-### 🔄 Próximas Fases
-- API integration
-- User authentication
-- Real-time sync
-- Advanced analytics
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie sua feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para detalhes.
-
-## 👥 Autor
-
-**DEU BOM!! Team**
-- Projeto criado como demonstração de PWA moderna
-- Foco em qualidade, performance e acessibilidade
-
-## 🙏 Agradecimentos
-
-- React e Vite pela stack incrível
-- Comunidade open source
-- Inspirado nas melhores práticas de UX/UI
-
----
-
-**🎉 DEU BOM!! - Controle financeiro que funciona!**
+A `main` permanece preservada. O pull request deve ser revisado contra a base React `codex-publicar-repositorio-e-fluxos-reais`; não substitua a aplicação publicada antes da validação autenticada do projeto Supabase e da revisão das funcionalidades ainda ausentes.

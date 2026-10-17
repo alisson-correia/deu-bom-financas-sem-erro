@@ -3,13 +3,14 @@ import { BalanceCard } from '@/components/financial/BalanceCard';
 import { TransactionList } from '@/components/financial/TransactionList';
 import { BottomNav } from '@/components/common/BottomNav';
 import './HomePage.css';
+import { localDate } from './lib/finance';
 
 const defaultForm = {
   description: '',
   amount: '',
   type: 'expense',
-  category: 'Comida',
-  date: '2024-03-15',
+  category: '',
+  date: '',
 };
 
 export function HomePage({
@@ -20,24 +21,29 @@ export function HomePage({
   onNavigate = () => {},
   onAddTransaction = () => {},
   categories = [],
+  canWrite = true,
+  busy = false,
 }) {
   const [showNewTransaction, setShowNewTransaction] = useState(false);
   const [formData, setFormData] = useState({
     ...defaultForm,
-    category: categories[0] || defaultForm.category,
+    category: '',
+    date: localDate(),
   });
   const [formError, setFormError] = useState('');
 
   const openNewTransactionModal = () => {
     setFormData({
       ...defaultForm,
-      category: categories[0] || defaultForm.category,
+      category: '',
+      date: localDate(),
     });
     setFormError('');
     setShowNewTransaction(true);
   };
 
   const closeNewTransactionModal = () => {
+    if (busy) return;
     setShowNewTransaction(false);
     setFormError('');
   };
@@ -47,7 +53,7 @@ export function HomePage({
     setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!formData.description.trim()) {
@@ -55,7 +61,7 @@ export function HomePage({
       return;
     }
 
-    if (!formData.amount || Number(formData.amount) <= 0) {
+    if (!Number.isFinite(Number(formData.amount)) || Number(formData.amount) <= 0) {
       setFormError('Informe um valor maior que zero.');
       return;
     }
@@ -65,30 +71,20 @@ export function HomePage({
       return;
     }
 
-    onAddTransaction(formData);
-    closeNewTransactionModal();
+    try {
+      await onAddTransaction(formData);
+      setShowNewTransaction(false);
+      setFormError('');
+    } catch (error) {
+      setFormError(error.message);
+    }
   };
 
   return (
     <div className="home-page">
       <header className="home-page__header">
         <h1 className="home-page__title">DEU BOM!!</h1>
-        <div className="home-page__header-actions">
-          <button
-            className="home-page__header-btn"
-            title="Configuracoes"
-            aria-label="Abrir configuracoes"
-          >
-            CFG
-          </button>
-          <button
-            className="home-page__header-btn"
-            title="Perfil"
-            aria-label="Abrir perfil do usuario"
-          >
-            PERFIL
-          </button>
-        </div>
+
       </header>
 
       <main className="home-page__main">
@@ -99,8 +95,6 @@ export function HomePage({
             variant="primary"
             size="large"
             subtext="Atualizado agora"
-            delta={15}
-            trend="up"
           />
         </section>
 
@@ -108,19 +102,17 @@ export function HomePage({
           <div className="home-page__summary-grid">
             <BalanceCard
               amount={expenses}
-              label="Gasto"
+              label="Gasto total"
               variant="expense"
               size="medium"
               subtext="Este mes"
-              delta={-5}
             />
             <BalanceCard
               amount={income}
-              label="Receita"
+              label="Receita total"
               variant="income"
               size="medium"
               subtext="Este mes"
-              delta={10}
             />
           </div>
         </section>
@@ -148,7 +140,7 @@ export function HomePage({
         </section>
 
         <section className="home-page__section home-page__section--actions">
-          <button className="home-page__cta-primary" onClick={openNewTransactionModal}>
+          <button className="home-page__cta-primary" disabled={!canWrite || busy} onClick={openNewTransactionModal}>
             + Nova Transacao
           </button>
           <button
@@ -162,8 +154,8 @@ export function HomePage({
 
       {showNewTransaction && (
         <div className="home-page__modal-overlay" onClick={closeNewTransactionModal}>
-          <div className="home-page__modal" onClick={(event) => event.stopPropagation()}>
-            <h3>Nova Transacao</h3>
+          <div className="home-page__modal" role="dialog" aria-modal="true" aria-labelledby="transaction-title" onClick={(event) => event.stopPropagation()}>
+            <h3 id="transaction-title">Nova Transacao</h3>
             <form className="home-page__form" onSubmit={handleSubmit}>
               <label className="home-page__field">
                 <span>Descricao</span>
@@ -179,7 +171,7 @@ export function HomePage({
               <div className="home-page__field-row">
                 <label className="home-page__field">
                   <span>Tipo</span>
-                  <select name="type" value={formData.type} onChange={handleChange}>
+                  <select name="type" aria-label="Tipo" value={formData.type} onChange={handleChange}>
                     <option value="expense">Gasto</option>
                     <option value="income">Receita</option>
                   </select>
@@ -202,10 +194,11 @@ export function HomePage({
               <div className="home-page__field-row">
                 <label className="home-page__field">
                   <span>Categoria</span>
-                  <select name="category" value={formData.category} onChange={handleChange}>
+                  <select name="category" aria-label="Categoria" value={formData.category} onChange={handleChange}>
+                    <option value="">Sem categoria</option>
                     {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
+                      <option key={category.id} value={category.id}>
+                        {category.name}
                       </option>
                     ))}
                   </select>
@@ -222,13 +215,13 @@ export function HomePage({
                 </label>
               </div>
 
-              {formError && <p className="home-page__form-error">{formError}</p>}
+              {formError && <p role="alert" className="home-page__form-error">{formError}</p>}
 
               <div className="home-page__form-actions">
                 <button type="button" className="home-page__cta-secondary" onClick={closeNewTransactionModal}>
                   Cancelar
                 </button>
-                <button type="submit" className="home-page__cta-primary">
+                <button type="submit" disabled={busy} className="home-page__cta-primary">
                   Salvar transacao
                 </button>
               </div>

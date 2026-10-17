@@ -25,3 +25,8 @@ _bmad/config.user.toml
 *.sln
 *.sw?
 .vercel
+
+# Runtime configuration
+.env
+.env.*
+!.env.example
