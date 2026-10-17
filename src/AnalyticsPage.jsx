@@ -115,12 +115,7 @@ export function AnalyticsPage({
           <button className="analytics-page__cta" onClick={handleExport}>
             Exportar Analise
           </button>
-          <button
-            className="analytics-page__cta analytics-page__cta--secondary"
-            onClick={() => onNavigate('transactions')}
-          >
-            Ver Transacoes
-          </button>
+
         </section>
       </main>
 
@@ -176,13 +171,13 @@ function getColorForCategory(category) {
   const colors = {
     Comida: '#F97316',
     Transporte: '#3B82F6',
-    Saude: '#10B981',
+    Saude: 'var(--color-income)',
     Educacao: '#8B5CF6',
     Alimentacao: '#F97316',
     Lazer: '#EC4899',
     Contas: '#EF4444',
-    Salario: '#10B981',
-    Freelance: '#14B8A6',
+    Salario: 'var(--color-income)',
+    Freelance: 'var(--color-income)',
   };
 
   return colors[category] || '#6B7280';

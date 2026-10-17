@@ -25,6 +25,7 @@ export default defineConfig({
       name: 'desktop',
       use: { ...devices['Desktop Chrome'] },
     },
+    { name: 'small-mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 320, height: 700 }, hasTouch: true } },
     {
       name: 'mobile',
       use: { ...devices['Pixel 7'] },

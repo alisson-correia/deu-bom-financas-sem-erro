@@ -155,7 +155,6 @@ export function TransactionList({
     return (
       <div className={`transaction-list empty ${className}`}>
         <div className="empty-state">
-          <div className="empty-icon">Lista</div>
           <div className="empty-text">{emptyText}</div>
         </div>
       </div>

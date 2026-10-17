@@ -6,8 +6,10 @@ import { AuthScreen } from './AuthScreen';
 import { supabase } from './lib/supabase';
 import { addTransaction, changeTransactions, downloadCsv, loadFinance, loadWorkspaces } from './lib/finance';
 import './App.css';
+import { Preferences } from './Preferences';
+import { UpdateNotice } from './UpdateNotice';
 
-function App() {
+function AppContent() {
   const [session, setSession] = useState(undefined);
   const [authError, setAuthError] = useState('');
   useEffect(() => {
@@ -135,4 +137,6 @@ function Finance({ userId, workspaceId, canWrite }) {
   </>;
 }
 
-export default App;
+export default function App() {
+  return <Preferences><UpdateNotice /><AppContent /></Preferences>;
+}

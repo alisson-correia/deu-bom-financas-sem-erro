@@ -5,20 +5,20 @@ export function BottomNav({ active = 'home', onNavigate = () => {} }) {
   const tabs = [
     {
       id: 'home',
-      label: 'Home',
-      icon: 'HOME',
+      label: 'Início',
+      icon: 'M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z',
       ariaLabel: 'Home - Visao geral',
     },
     {
       id: 'transactions',
-      label: 'Transacoes',
-      icon: 'MOV',
+      label: 'Movimentos',
+      icon: 'M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4',
       ariaLabel: 'Transacoes - Gestao de movimentos',
     },
     {
       id: 'analytics',
-      label: 'Analise',
-      icon: 'DADOS',
+      label: 'Análise',
+      icon: 'M4 20h16M7 16V9m5 7V4m5 12v-5',
       ariaLabel: 'Analise - Insights e graficos',
     },
   ];
@@ -35,7 +35,7 @@ export function BottomNav({ active = 'home', onNavigate = () => {} }) {
             aria-current={active === tab.id ? 'page' : undefined}
             title={tab.label}
           >
-            <span className="bottom-nav__icon">{tab.icon}</span>
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={tab.icon} /></svg>
             <span className="bottom-nav__label">{tab.label}</span>
           </button>
         ))}

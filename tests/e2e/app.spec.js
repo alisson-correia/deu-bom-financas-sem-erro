@@ -61,10 +61,10 @@ async function login(page) {
 }
 
 async function fillTransaction(page, description = 'Pagamento teste') {
-  await page.getByRole('button', { name: '+ Nova Transacao' }).click();
+  await page.getByRole('button', { name: '+ Nova receita', exact: true }).click();
   await page.getByLabel('Descricao', { exact: true }).fill(description);
   await page.getByLabel('Valor', { exact: true }).fill('123.45');
-  await page.getByLabel('Tipo', { exact: true }).selectOption('income');
+  await page.getByRole('dialog').getByRole('button', { name: 'Receita', exact: true }).click();
   await page.getByLabel('Categoria', { exact: true }).selectOption(CATEGORY);
   await page.getByLabel('Data', { exact: true }).fill(localToday());
 }
@@ -101,7 +101,7 @@ test('login, criação, recarga, categorização, exportação e exclusão persi
     expect(write.query.get('user_id')).toBe(`eq.${USER}`);
     expect(write.query.get('workspace_id')).toBe('is.null');
   }
-  await page.getByRole('button', { name: 'Abrir analise' }).click();
+  await page.getByRole('button', { name: 'Analise - Insights e graficos' }).click();
   await expect(page.getByRole('heading', { name: 'Analise', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Sair', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible();
@@ -164,7 +164,7 @@ test('visualizador consulta apenas o espaço selecionado e não pode gravar', as
   await login(page);
   await page.getByLabel('Espaço', { exact: true }).selectOption(SPACE);
   await expect(page.getByText('Você tem acesso de leitura a este espaço.')).toBeVisible();
-  await expect(page.getByRole('button', { name: '+ Nova Transacao' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '+ Nova receita', exact: true })).toBeDisabled();
   await expect(page.getByText('Carregando finanças…')).toHaveCount(0);
   const reads = state.requests.filter((row) => row.path.endsWith('/transactions'));
   expect(reads.at(-1).query.get('workspace_id')).toBe(`eq.${SPACE}`);
@@ -219,4 +219,148 @@ test('gravação confirmada com falha na atualização não induz reenvio do for
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
   await expect(page.getByText('Pagamento teste', { exact: true })).toBeVisible();
   expect(state.writes).toHaveLength(1);
+});
+
+
+async function chooseTheme(page, name) {
+  await page.getByLabel('Alterar tema', { exact: true }).click();
+  await page.getByRole('group', { name: 'Aparência' }).getByRole('button', { name, exact: true }).click();
+  if (name !== 'Sistema') await expect(page.locator('html')).toHaveAttribute('data-theme', name === 'Escuro' ? 'dark' : 'light');
+}
+
+test('temas claro, escuro e sistema persistem e respeitam a preferência do dispositivo', async ({ page }) => {
+  await backend(page);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/');
+  await chooseTheme(page, 'Escuro');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await chooseTheme(page, 'Claro');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await chooseTheme(page, 'Sistema');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+
+test('receita e despesa têm aparência neutra igual e só a seleção recebe destaque', async ({ page }) => {
+  await backend(page);
+  await login(page);
+  const expense = page.getByRole('button', { name: '− Nova despesa', exact: true });
+  const income = page.getByRole('button', { name: '+ Nova receita', exact: true });
+  const style = (locator) => locator.evaluate((element) => ({ bg: getComputedStyle(element).backgroundColor, color: getComputedStyle(element).color }));
+  expect(await style(expense)).toEqual(await style(income));
+  await expense.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Despesa', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await dialog.getByRole('button', { name: 'Receita', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Receita', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByRole('button', { name: 'Despesa', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  expect(await style(dialog.getByRole('button', { name: 'Receita', exact: true }))).not.toEqual(await style(dialog.getByRole('button', { name: 'Despesa', exact: true })));
+});
+
+test('voz preenche um rascunho para revisão e aceita comando de tema', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.SpeechRecognition = class {
+      start() { window.dispatchVoice = (text) => { this.onresult({ results: [[{ transcript: text }]] }); this.onend(); }; }
+      stop() { this.onend(); }
+      abort() {}
+    };
+  });
+  const state = await backend(page);
+  await login(page);
+  await page.getByRole('button', { name: 'Falar com o app' }).click();
+  await page.evaluate(() => window.dispatchVoice('gastei 35,90 reais no mercado'));
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByLabel('Valor', { exact: true })).toHaveValue('35.9');
+  await expect(page.getByRole('button', { name: 'Despesa', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(state.writes).toHaveLength(0);
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await page.getByRole('button', { name: 'Falar com o app' }).click();
+  await page.evaluate(() => window.dispatchVoice('tema escuro'));
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(state.writes).toHaveLength(0);
+});
+
+test('permissão de microfone negada apresenta alternativa manual', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.SpeechRecognition = class {
+      start() { this.onerror({ error: 'not-allowed' }); this.onend(); }
+      abort() {}
+    };
+  });
+  await backend(page);
+  await login(page);
+  await page.getByRole('button', { name: 'Falar com o app' }).click();
+  await expect(page.getByRole('alert')).toContainText('microfone foi negado');
+  await page.getByRole('button', { name: '+ Nova receita', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('aviso de atualização preserva formulário e exige confirmação para recarregar', async ({ page }) => {
+  let update = false;
+  await page.route('**/version.json*', (route) => update ? route.fulfill({ json: { version: 'new-release-test' } }) : route.continue());
+  await backend(page);
+  await login(page);
+  await fillTransaction(page, 'Não perder este rascunho');
+  update = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByText('Uma nova versão está disponível')).toBeAttached();
+  await expect(page.getByLabel('Descricao', { exact: true })).toHaveValue('Não perder este rascunho');
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Atualizar app', exact: true }).click();
+  await expect(page.getByText('Uma nova versão está disponível')).toBeVisible();
+  await page.getByRole('button', { name: 'Depois', exact: true }).click();
+  await expect(page.getByText('Uma nova versão está disponível')).toHaveCount(0);
+});
+
+test('layout cabe na tela, mantém alvos de toque e formulário utilizável nos dois temas', async ({ page }, testInfo) => {
+  await backend(page);
+  await login(page);
+  for (const theme of ['Claro', 'Escuro']) {
+    await chooseTheme(page, theme);
+    await expect(page.getByRole('heading', { name: 'Visão geral', exact: true })).toBeVisible();
+    const contrast = await page.locator('.balance-primary .amount').evaluate((element) => {
+      const rgb = (color) => color.match(/[\d.]+/g).map(Number);
+      const foreground = rgb(getComputedStyle(element).color);
+      const background = rgb(getComputedStyle(element.closest('.balance-card')).backgroundColor);
+      const base = rgb(getComputedStyle(document.documentElement).backgroundColor);
+      const alpha = background[3] ?? 1;
+      const composite = background.slice(0, 3).map((value, index) => alpha * value + (1 - alpha) * base[index]);
+      const luminance = (color) => color.slice(0, 3).map((value) => value / 255).map((v) => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      const a = luminance(foreground); const b = luminance(composite);
+      return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+    });
+    expect(contrast).toBeGreaterThanOrEqual(4.5);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    for (const name of ['− Nova despesa', '+ Nova receita', 'Falar com o app']) {
+      const bounds = await page.getByRole('button', { name, exact: true }).boundingBox();
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+    }
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.screenshot({ path: `/tmp/deubom-${testInfo.project.name}-${theme}.png`, fullPage: true });
+    await fillTransaction(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  }
+});
+
+
+test('movimentos e análises cabem na tela clara e escura', async ({ page }) => {
+  const state = await backend(page);
+  state.rows = [
+    { id: 'expense-mobile', title: 'Despesa mobile', date: localToday(), type: 'expense', amount: 123.45, category_id: null, workspace_id: null },
+    { id: 'income-mobile', title: 'Receita mobile', date: localToday(), type: 'income', amount: 500, category_id: CATEGORY, workspace_id: null },
+  ];
+  await login(page);
+  for (const theme of ['Claro', 'Escuro']) {
+    await chooseTheme(page, theme);
+    for (const name of ['Transacoes - Gestao de movimentos', 'Analise - Insights e graficos']) {
+      await page.getByRole('button', { name, exact: true }).click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+  }
 });

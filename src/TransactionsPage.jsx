@@ -66,13 +66,7 @@ export function TransactionsPage({
     <div className="transactions-page">
       <header className="transactions-page__header">
         <h1>Transacoes</h1>
-        <button
-          className="transactions-page__search-btn"
-          aria-label="Abrir analise"
-          onClick={() => onNavigate('analytics')}
-        >
-          DADOS
-        </button>
+
       </header>
 
       <FilterBar
