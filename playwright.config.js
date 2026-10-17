@@ -13,7 +13,11 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 4175',
     url: 'http://127.0.0.1:4175',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
+    env: {
+      VITE_SUPABASE_URL: 'https://supabase.test',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+    },
     timeout: 60_000,
   },
   projects: [
@@ -21,6 +25,7 @@ export default defineConfig({
       name: 'desktop',
       use: { ...devices['Desktop Chrome'] },
     },
+    { name: 'small-mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 320, height: 700 }, hasTouch: true } },
     {
       name: 'mobile',
       use: { ...devices['Pixel 7'] },

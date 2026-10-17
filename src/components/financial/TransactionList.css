@@ -52,7 +52,7 @@
 }
 
 .transaction-item.transaction-income {
-  --tx-color: #10B981;
+  --tx-color: var(--color-income);
 }
 
 .transaction-item.transaction-transfer {
@@ -150,7 +150,7 @@
 }
 
 .transaction-item .amount-income {
-  color: #10B981;
+  color: var(--color-income);
 }
 
 .transaction-item .amount-transfer {

@@ -4,10 +4,13 @@ import { TransactionList } from '@/components/financial/TransactionList';
 import { ActionBar } from '@/components/common/ActionBar';
 import { BottomNav } from '@/components/common/BottomNav';
 import './TransactionsPage.css';
+import { filterTransactions } from './lib/finance';
 
 export function TransactionsPage({
   transactions = [],
-  categories = ['Comida', 'Transporte', 'Saude', 'Educacao', 'Lazer', 'Contas', 'Salario'],
+  categories = [],
+  canWrite = true,
+  busy = false,
   onNavigate = () => {},
   onDeleteTransactions = () => {},
   onCategorizeTransactions = () => {},
@@ -17,42 +20,39 @@ export function TransactionsPage({
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectionResetKey, setSelectionResetKey] = useState(0);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Comida');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      if (filter.categories.length > 0 && !filter.categories.includes(transaction.category)) {
-        return false;
-      }
-
-      if (
-        filter.search &&
-        !transaction.description.toLowerCase().includes(filter.search.toLowerCase())
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [transactions, filter]);
+  const [error, setError] = useState('');
+  const categoryNames = [...new Set([...categories.map((item) => item.name), 'Sem categoria'])];
+  const filteredTransactions = useMemo(() => filterTransactions(transactions, filter), [transactions, filter]);
+  const changeFilter = (next) => {
+    setFilter(next);
+    setSelectedIds([]);
+    setSelectionResetKey((value) => value + 1);
+  };
 
   const handleSelectionChange = (ids) => {
     setSelectedIds(ids);
   };
 
-  const handleDeleteSelected = () => {
-    onDeleteTransactions(selectedIds);
+  const handleDeleteSelected = async () => {
+    if (!window.confirm(`Excluir ${selectedIds.length} transação(ões)? Essa ação não pode ser desfeita.`)) return;
+    setError('');
+    try { await onDeleteTransactions(selectedIds); }
+    catch (error) { setError(error.message); return; }
     setSelectedIds([]);
     setSelectionResetKey((current) => current + 1);
   };
 
   const handleCategorizeSelected = () => {
-    setSelectedCategory(categories[0] || 'Comida');
+    setSelectedCategory('');
     setShowCategoryModal(true);
   };
 
-  const handleApplyCategory = () => {
-    onCategorizeTransactions(selectedIds, selectedCategory);
+  const handleApplyCategory = async () => {
+    setError('');
+    try { await onCategorizeTransactions(selectedIds, selectedCategory); }
+    catch (error) { setError(error.message); return; }
     setSelectedIds([]);
     setSelectionResetKey((current) => current + 1);
     setShowCategoryModal(false);
@@ -66,23 +66,18 @@ export function TransactionsPage({
     <div className="transactions-page">
       <header className="transactions-page__header">
         <h1>Transacoes</h1>
-        <button
-          className="transactions-page__search-btn"
-          aria-label="Abrir analise"
-          onClick={() => onNavigate('analytics')}
-        >
-          DADOS
-        </button>
+
       </header>
 
       <FilterBar
-        periods={['Ultimos 30d', 'Este mes', 'Este ano', 'Custom']}
-        categories={categories}
-        onFilter={setFilter}
+        periods={['Ultimos 30d', 'Este mes', 'Este ano', 'Todo periodo']}
+        categories={categoryNames}
+        onFilter={changeFilter}
         initialPeriod="Ultimos 30d"
         showSearch
       />
 
+      {error && <p role="alert">{error}</p>}
       <main className="transactions-page__main">
         <div className="transactions-page__status">
           <span>{filteredTransactions.length} transacoes encontradas</span>
@@ -104,7 +99,7 @@ export function TransactionsPage({
             transactions={filteredTransactions}
             limit={null}
             grouped={false}
-            selectable
+            selectable={canWrite}
             editable={false}
             onSelectionChange={handleSelectionChange}
           />
@@ -116,12 +111,12 @@ export function TransactionsPage({
         )}
       </main>
 
-      {selectedIds.length > 0 && (
+      {canWrite && selectedIds.length > 0 && (
         <ActionBar
           selectedCount={selectedIds.length}
           actions={[
-            { label: 'Deletar', icon: 'DEL', handler: handleDeleteSelected, danger: true },
-            { label: 'Categorizar', icon: 'TAG', handler: handleCategorizeSelected },
+            { disabled: busy, label: 'Deletar', icon: 'DEL', handler: handleDeleteSelected, danger: true },
+            { disabled: busy, label: 'Categorizar', icon: 'TAG', handler: handleCategorizeSelected },
           ]}
         />
       )}
@@ -129,7 +124,7 @@ export function TransactionsPage({
       {showCategoryModal && (
         <div
           className="transactions-page__modal-overlay"
-          onClick={() => setShowCategoryModal(false)}
+          onClick={() => { if (!busy) setShowCategoryModal(false); }}
         >
           <div
             className="transactions-page__modal"
@@ -144,12 +139,14 @@ export function TransactionsPage({
             <label className="transactions-page__modal-field">
               <span>Categoria</span>
               <select
+                aria-label="Categoria"
                 value={selectedCategory}
                 onChange={(event) => setSelectedCategory(event.target.value)}
               >
+                <option value="">Sem categoria</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.id} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -159,13 +156,14 @@ export function TransactionsPage({
               <button
                 type="button"
                 className="transactions-page__modal-btn transactions-page__modal-btn--secondary"
-                onClick={() => setShowCategoryModal(false)}
+                onClick={() => { if (!busy) setShowCategoryModal(false); }}
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 className="transactions-page__modal-btn"
+                disabled={busy}
                 onClick={handleApplyCategory}
               >
                 Aplicar categoria

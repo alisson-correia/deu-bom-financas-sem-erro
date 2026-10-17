@@ -33,8 +33,8 @@
 }
 
 .balance-card.balance-income {
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-  border-color: #34d399;
+  background: linear-gradient(135deg, var(--color-income) 0%, var(--color-income) 100%);
+  border-color: var(--color-income);
   color: #fff;
 }
 
@@ -173,7 +173,7 @@
 }
 
 .balance-card .delta-up {
-  color: #10B981;
+  color: var(--color-income);
 }
 
 .balance-card .delta-down {

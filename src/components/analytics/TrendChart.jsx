@@ -87,7 +87,7 @@ export function TrendChart({ data = [], metric = 'gastos', emptyMessage = 'Sem d
           {/* Área sob a linha */}
           <path
             d={areaPath}
-            fill={isPositive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}
+            fill={isPositive ? 'rgba(239, 68, 68, 0.1)' : 'var(--income-soft)'}
             className="trend-chart__area"
           />
 
@@ -95,7 +95,7 @@ export function TrendChart({ data = [], metric = 'gastos', emptyMessage = 'Sem d
           <polyline
             points={points.map(p => `${p.x},${p.y}`).join(' ')}
             fill="none"
-            stroke={isPositive ? '#EF4444' : '#10B981'}
+            stroke={isPositive ? '#EF4444' : 'var(--color-income)'}
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -111,7 +111,7 @@ export function TrendChart({ data = [], metric = 'gastos', emptyMessage = 'Sem d
                 cy={point.y}
                 r="4"
                 fill="var(--color-surface, #1E293B)"
-                stroke={isPositive ? '#EF4444' : '#10B981'}
+                stroke={isPositive ? '#EF4444' : 'var(--color-income)'}
                 strokeWidth="2"
               />
               {/* Valor ao passar mouse (via tooltip no CSS) */}

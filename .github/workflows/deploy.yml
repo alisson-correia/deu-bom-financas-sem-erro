@@ -4,7 +4,6 @@ on:
   push:
     branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
 
 jobs:
   build-and-deploy:
@@ -17,28 +16,39 @@ jobs:
     - name: 🟢 Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '24'
         cache: 'npm'
 
     - name: 📦 Install dependencies
       run: npm ci
 
     - name: 🧪 Run tests
-      run: npm run test -- --watchAll=false --passWithNoTests
+      run: npm test
 
     - name: 🔍 Run linting
       run: npm run lint
 
+    - name: Check production configuration
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      env:
+        VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      run: node -e 'if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY) throw new Error("Configure the public Supabase repository variables before deployment")'
+
     - name: 🏗️ Build for production
+      env:
+        VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       run: npm run build
 
-    - name: 📊 Lighthouse CI (optional)
-      run: |
-        npm install -g lighthouse
-        lighthouse https://deu-bom-fintech-pwa.vercel.app --output=json --output-path=./lighthouse-results.json || true
+    - name: Install browser
+      run: npx playwright install --with-deps chromium
+
+    - name: Browser tests (mock API)
+      run: npm run test:e2e -- --workers=2
 
     - name: 📤 Deploy to Vercel
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}

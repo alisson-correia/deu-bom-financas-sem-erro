@@ -36,7 +36,7 @@
 }
 
 .insight-card--success {
-  border-left-color: var(--color-success, #10B981);
+  border-left-color: var(--color-success, var(--color-income));
 }
 
 .insight-card--success:hover {

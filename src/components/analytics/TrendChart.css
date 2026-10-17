@@ -80,7 +80,7 @@
 }
 
 .trend-chart__stat--decrease {
-  border-color: var(--color-success, #10B981);
+  border-color: var(--color-success, var(--color-income));
   background: var(--color-success-alpha, rgba(16, 185, 129, 0.05));
 }
 
@@ -103,7 +103,7 @@
 }
 
 .trend-chart__stat--decrease strong {
-  color: var(--color-success, #10B981);
+  color: var(--color-success, var(--color-income));
 }
 
 /* Responsive */
